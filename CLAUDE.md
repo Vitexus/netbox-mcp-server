@@ -168,6 +168,8 @@ See `NETBOX_OBJECT_TYPES` in `server.py` for complete list.
 
 - `NETBOX_URL`: Base URL of NetBox instance (e.g., `https://netbox.example.com/`)
 - `NETBOX_TOKEN`: Read-only API token with appropriate permissions
+- `NETBOX_TIMEOUT`: Request timeout in seconds for calls to the NetBox API (default: `30.0`)
+- `NETBOX_READONLY`: Reject write operations against NetBox at the client level (default: `true`)
 - `LOG_LEVEL`: Logging verbosity (default: `INFO`, options: `DEBUG`, `WARNING`, `ERROR`)
 
 ## Security Considerations

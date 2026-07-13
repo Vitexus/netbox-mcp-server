@@ -161,7 +161,14 @@ class NetBoxRestClient(NetBoxClientBase):
     # })
     # print(f"Created site: {new_site.get('name')} (ID: {new_site.get('id')})")
 
-    def __init__(self, url: str, token: str, verify_ssl: bool = True):
+    def __init__(
+        self,
+        url: str,
+        token: str,
+        verify_ssl: bool = True,
+        timeout: float = 30.0,
+        readonly: bool = True,
+    ):
         """
         Initialize the REST API client.
 
@@ -169,13 +176,23 @@ class NetBoxRestClient(NetBoxClientBase):
             url: The base URL of the NetBox instance (e.g., 'https://netbox.example.com')
             token: API token for authentication
             verify_ssl: Whether to verify SSL certificates
+            timeout: Request timeout in seconds. NetBox endpoints that resolve many
+                     related objects (e.g. dcim/devices) can take several seconds to
+                     respond, so this defaults higher than httpx's 5-second default.
+            readonly: When True (the default), all write operations (create, update,
+                      delete, and their bulk variants) are rejected before any request
+                      is made. This project exposes no write tools, but the client
+                      itself implements the full CRUD interface, so this guard keeps
+                      that interface safe by default even if it's used directly.
         """
         self.base_url = url.rstrip("/")
         self.api_url = f"{self.base_url}/api"
         self.token = token
         self.verify_ssl = verify_ssl
+        self.timeout = timeout
+        self.readonly = readonly
         auth_scheme = "Bearer" if token.startswith("nbt_") else "Token"
-        self.session = httpx.Client(verify=self.verify_ssl)
+        self.session = httpx.Client(verify=self.verify_ssl, timeout=self.timeout)
         self.session.headers.update(
             {
                 "Authorization": f"{auth_scheme} {token}",
@@ -190,6 +207,23 @@ class NetBoxRestClient(NetBoxClientBase):
         if id is not None:
             return f"{self.api_url}/{endpoint}/{id}/"
         return f"{self.api_url}/{endpoint}/"
+
+    def _check_writable(self, operation: str) -> None:
+        """Raise if the client is in read-only mode.
+
+        Args:
+            operation: Name of the write operation being attempted, used in the
+                       error message (e.g. 'create', 'delete').
+
+        Raises:
+            PermissionError: If the client was initialized with readonly=True.
+        """
+        if self.readonly:
+            raise PermissionError(
+                f"Cannot perform '{operation}': client is read-only. "
+                "Set readonly=False (NETBOX_READONLY=false / --no-netbox-readonly) "
+                "to allow write operations."
+            )
 
     def get(
         self,
@@ -245,6 +279,7 @@ class NetBoxRestClient(NetBoxClientBase):
         Raises:
             httpx.HTTPStatusError: If the request fails
         """
+        self._check_writable("create")
         url = self._build_url(endpoint)
         response = self.session.post(url, json=data)
         response.raise_for_status()
@@ -265,6 +300,7 @@ class NetBoxRestClient(NetBoxClientBase):
         Raises:
             httpx.HTTPStatusError: If the request fails
         """
+        self._check_writable("update")
         url = self._build_url(endpoint, id)
         response = self.session.patch(url, json=data)
         response.raise_for_status()
@@ -284,6 +320,7 @@ class NetBoxRestClient(NetBoxClientBase):
         Raises:
             httpx.HTTPStatusError: If the request fails
         """
+        self._check_writable("delete")
         url = self._build_url(endpoint, id)
         response = self.session.delete(url)
         response.raise_for_status()
@@ -303,7 +340,8 @@ class NetBoxRestClient(NetBoxClientBase):
         Raises:
             httpx.HTTPStatusError: If the request fails
         """
-        url = f"{self._build_url(endpoint)}bulk/"
+        self._check_writable("bulk_create")
+        url = self._build_url(endpoint)
         response = self.session.post(url, json=data)
         response.raise_for_status()
         return response.json()
@@ -322,7 +360,8 @@ class NetBoxRestClient(NetBoxClientBase):
         Raises:
             httpx.HTTPStatusError: If the request fails
         """
-        url = f"{self._build_url(endpoint)}bulk/"
+        self._check_writable("bulk_update")
+        url = self._build_url(endpoint)
         response = self.session.patch(url, json=data)
         response.raise_for_status()
         return response.json()
@@ -341,8 +380,11 @@ class NetBoxRestClient(NetBoxClientBase):
         Raises:
             httpx.HTTPStatusError: If the request fails
         """
-        url = f"{self._build_url(endpoint)}bulk/"
+        self._check_writable("bulk_delete")
+        url = self._build_url(endpoint)
         data = [{"id": id} for id in ids]
-        response = self.session.delete(url, json=data)
+        # httpx.Client.delete() doesn't accept a request body; DELETE-with-body
+        # requires the lower-level .request() call.
+        response = self.session.request("DELETE", url, json=data)
         response.raise_for_status()
         return response.status_code == 204

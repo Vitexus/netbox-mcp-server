@@ -23,6 +23,30 @@ def client():
     )
 
 
+def test_client_default_timeout_is_30_seconds():
+    """The client must not fall back to httpx's 5-second default, which is too
+    aggressive for NetBox endpoints that resolve many related objects."""
+    client = NetBoxRestClient(
+        url="https://netbox.example.com",
+        token="test-token",
+    )
+
+    assert client.timeout == 30.0
+    assert client.session.timeout.read == 30.0
+
+
+def test_client_accepts_custom_timeout():
+    """Test that a custom timeout is passed through to the httpx session."""
+    client = NetBoxRestClient(
+        url="https://netbox.example.com",
+        token="test-token",
+        timeout=90.0,
+    )
+
+    assert client.timeout == 90.0
+    assert client.session.timeout.read == 90.0
+
+
 # ============================================================================
 # Fallback Trigger Conditions
 # ============================================================================

@@ -58,6 +58,13 @@ class Settings(BaseSettings):
     verify_ssl: bool = True
     """Whether to verify SSL certificates when connecting to NetBox"""
 
+    # ===== Connection Settings =====
+    netbox_timeout: float = 30.0
+    """Request timeout in seconds for calls to the NetBox API"""
+
+    netbox_readonly: bool = True
+    """Whether the NetBox client rejects write operations (create/update/delete)"""
+
     # ===== Observability Settings =====
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     """Logging verbosity level"""
@@ -136,6 +143,8 @@ class Settings(BaseSettings):
             "netbox_token": "***REDACTED***",
             "transport": self.transport,
             "verify_ssl": self.verify_ssl,
+            "netbox_timeout": self.netbox_timeout,
+            "netbox_readonly": self.netbox_readonly,
             "enable_plugin_discovery": self.enable_plugin_discovery,
             "log_level": self.log_level,
         }

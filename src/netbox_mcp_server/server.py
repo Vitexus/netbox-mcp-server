@@ -88,6 +88,25 @@ def parse_cli_args() -> dict[str, Any]:
         dest="verify_ssl",
         help="Disable SSL certificate verification (not recommended)",
     )
+    parser.add_argument(
+        "--netbox-timeout",
+        type=float,
+        help="Request timeout in seconds for calls to the NetBox API (default: 30)",
+    )
+    readonly_group = parser.add_mutually_exclusive_group()
+    readonly_group.add_argument(
+        "--netbox-readonly",
+        action="store_true",
+        dest="netbox_readonly",
+        default=None,
+        help="Reject write operations against NetBox (default)",
+    )
+    readonly_group.add_argument(
+        "--no-netbox-readonly",
+        action="store_false",
+        dest="netbox_readonly",
+        help="Allow write operations against NetBox (not recommended)",
+    )
 
     # Plugin discovery settings
     parser.add_argument(
@@ -125,6 +144,10 @@ def parse_cli_args() -> dict[str, Any]:
         overlay["mcp_auth_token"] = args.mcp_auth_token
     if args.verify_ssl is not None:
         overlay["verify_ssl"] = args.verify_ssl
+    if args.netbox_timeout is not None:
+        overlay["netbox_timeout"] = args.netbox_timeout
+    if args.netbox_readonly is not None:
+        overlay["netbox_readonly"] = args.netbox_readonly
     if args.enable_plugin_discovery is not None:
         overlay["enable_plugin_discovery"] = args.enable_plugin_discovery
     if args.log_level is not None:
@@ -749,6 +772,12 @@ def main() -> None:
             "This is insecure and should only be used for testing."
         )
 
+    if not settings.netbox_readonly:
+        logger.warning(
+            "NetBox client write protection is DISABLED. "
+            "Write operations (create/update/delete) will be allowed against NetBox."
+        )
+
     if settings.transport == "http" and settings.host in ["0.0.0.0", "::", "[::]"]:  # noqa: S104 - checking, not binding
         logger.warning(
             f"HTTP transport is bound to {settings.host}:{settings.port}, which exposes the "
@@ -769,6 +798,8 @@ def main() -> None:
             url=str(settings.netbox_url),
             token=settings.netbox_token.get_secret_value(),
             verify_ssl=settings.verify_ssl,
+            timeout=settings.netbox_timeout,
+            readonly=settings.netbox_readonly,
         )
         logger.debug("NetBox client initialized successfully")
     except Exception as e:

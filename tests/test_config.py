@@ -151,6 +151,62 @@ def test_parse_cli_args_mcp_auth_token():
         sys.argv = original_argv
 
 
+def test_parse_cli_args_netbox_timeout():
+    """--netbox-timeout maps to the netbox_timeout overlay key."""
+
+    original_argv = sys.argv
+    try:
+        sys.argv = ["server.py", "--netbox-timeout", "45"]
+        result = parse_cli_args()
+        assert result["netbox_timeout"] == 45.0
+    finally:
+        sys.argv = original_argv
+
+
+def test_settings_netbox_timeout_default():
+    """Test that netbox_timeout defaults to 30.0 seconds."""
+
+    settings = Settings(
+        netbox_url="https://netbox.example.com/", netbox_token="test-token", _env_file=None
+    )
+
+    assert settings.netbox_timeout == 30.0
+
+
+def test_parse_cli_args_netbox_readonly_false():
+    """--no-netbox-readonly maps to the netbox_readonly overlay key."""
+
+    original_argv = sys.argv
+    try:
+        sys.argv = ["server.py", "--no-netbox-readonly"]
+        result = parse_cli_args()
+        assert result["netbox_readonly"] is False
+    finally:
+        sys.argv = original_argv
+
+
+def test_parse_cli_args_netbox_readonly_true():
+    """--netbox-readonly explicitly maps to the netbox_readonly overlay key."""
+
+    original_argv = sys.argv
+    try:
+        sys.argv = ["server.py", "--netbox-readonly"]
+        result = parse_cli_args()
+        assert result["netbox_readonly"] is True
+    finally:
+        sys.argv = original_argv
+
+
+def test_settings_netbox_readonly_default():
+    """Test that netbox_readonly defaults to True."""
+
+    settings = Settings(
+        netbox_url="https://netbox.example.com/", netbox_token="test-token", _env_file=None
+    )
+
+    assert settings.netbox_readonly is True
+
+
 # ===== Logging Configuration Tests =====
 
 

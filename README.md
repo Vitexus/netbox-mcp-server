@@ -1,5 +1,7 @@
 # NetBox MCP Server
 
+<img src="debian/netbox-mcp-server.svg" alt="NetBox MCP Server logo" width="120" height="120">
+
 > **⚠️ Breaking Change in v1.0.0**: The project structure has changed.
 > If upgrading from v0.1.0, update your configuration:
 > - Change `uv run server.py` to `uv run netbox-mcp-server`
@@ -177,6 +179,8 @@ The server supports multiple configuration sources with the following precedence
 | `PORT` | Integer | `8000` | If HTTP | Port for HTTP server |
 | `MCP_AUTH_TOKEN` | String | - | No | Bearer token required on the HTTP endpoint. When unset, the HTTP transport is unauthenticated. Clients send `Authorization: Bearer <token>`. |
 | `VERIFY_SSL` | Boolean | `true` | No | Whether to verify SSL certificates |
+| `NETBOX_TIMEOUT` | Float | `30.0` | No | Request timeout in seconds for calls to the NetBox API |
+| `NETBOX_READONLY` | Boolean | `true` | No | Reject write operations (create/update/delete) against NetBox |
 | `ENABLE_PLUGIN_DISCOVERY` | Boolean | `false` | No | Auto-discover plugin object types at startup |
 | `LOG_LEVEL` | `DEBUG` \| `INFO` \| `WARNING` \| `ERROR` \| `CRITICAL` | `INFO` | No | Logging verbosity |
 
