@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="console-application">
+  <id>cz.vitexsoftware.netbox-mcp-server</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>Apache-2.0</project_license>
+  <name>NetBox MCP Server</name>
+  <summary>Read-only MCP server for NetBox infrastructure data</summary>
+  <description>
+    <p>
+      NetBox MCP Server is a read-only Model Context Protocol (MCP) server
+      that lets LLMs query NetBox infrastructure data. It is built with
+      FastMCP and designed for use by NetBox operators.
+    </p>
+    <p>
+      It exposes NetBox's DCIM, IPAM, circuits, virtualization, tenancy,
+      VPN, and wireless objects as read-only tools, so an LLM can look up
+      devices, sites, IP addresses, VLANs, circuits, and related data
+      without being able to modify anything. Only GET operations are
+      exposed; no create, update, or delete tools are provided.
+    </p>
+  </description>
+  <icon type="stock">cz.vitexsoftware.netbox-mcp-server</icon>
+  <provides>
+    <binary>netbox-mcp-server</binary>
+  </provides>
+  <categories>
+    <category>Network</category>
+    <category>System</category>
+  </categories>
+  <url type="homepage">https://github.com/netboxlabs/netbox-mcp-server</url>
+  <url type="vcs-browser">https://github.com/Vitexus/netbox-mcp-server</url>
+  <developer id="cz.vitexsoftware">
+    <name>VitexSoftware</name>
+  </developer>
+  <releases>
+    <release version="1.2.1" date="2026-06-17"/>
+  </releases>
+  <content_rating type="oars-1.1"/>
+</component>

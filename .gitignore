@@ -90,3 +90,13 @@ logs/
 .worktrees/
 
 .plans/*
+
+# Debian build artifacts
+debian/*.1
+debian/*.substvars
+debian/*.debhelper
+debian/files
+debian/.debhelper/
+debian/netbox-mcp-server/
+debian/debhelper-build-stamp
+.pybuild/

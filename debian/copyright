@@ -1,0 +1,17 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: netbox-mcp-server
+Upstream-Contact: NetBox Labs <https://github.com/netboxlabs/netbox-mcp-server>
+Source: https://github.com/netboxlabs/netbox-mcp-server
+
+Files:     *
+Copyright: 2025 NetBox Labs, Inc.
+License:   Apache-2.0
+
+Files:     debian/*
+Copyright: 2026 Vítězslav Dvořák <info@vitexsoftware.cz>
+License:   Apache-2.0
+
+
+License: Apache-2.0
+ On Debian systems, the complete text of the Apache License, Version 2.0
+ can be found in "/usr/share/common-licenses/Apache-2.0".
