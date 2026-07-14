@@ -16,8 +16,8 @@ Build-Depends:
  python3-pydantic-settings,
 Standards-Version: 4.7.0
 Homepage: https://github.com/netboxlabs/netbox-mcp-server
-Vcs-Git: https://github.com/Vitexus/netbox-mcp-server.git
-Vcs-Browser: https://github.com/Vitexus/netbox-mcp-server
+Vcs-Git: https://github.com/Spoje-NET/netbox-mcp-server.git
+Vcs-Browser: https://github.com/Spoje-NET/netbox-mcp-server
 Rules-Requires-Root: no
 
 Package: netbox-mcp-server

@@ -24,6 +24,7 @@ For chat, use cases, and general MCP discussion, join the NetBox community at [n
 | get_objects | Retrieves NetBox core objects based on their type and filters |
 | get_object_by_id | Gets detailed information about a specific NetBox object by its ID |
 | get_changelogs | Retrieves change history records (audit trail) based on filters |
+| search_objects | Cross-type text search across NetBox object types |
 
 > Note: Core NetBox object types are always available. Plugin object types can be auto-discovered. See [Plugin Object Type Discovery](#plugin-object-type-discovery). Advanced features (GraphQL, dynamic model discovery, etc.) are deliberately out of scope. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full scope statement and rationale.
 
@@ -40,6 +41,20 @@ For chat, use cases, and general MCP discussion, join the NetBox community at [n
     # Or using pip
     pip install -e .
     ```
+
+    Debian/Ubuntu users can instead install a prebuilt `.deb` from the VitexSoftware apt
+    repository, which installs `netbox-mcp-server` as `/usr/bin/netbox-mcp-server` with all
+    dependencies (currently built for Debian trixie):
+
+    ```bash
+    curl -fsSL https://repo.vitexsoftware.com/KEY.gpg | sudo tee /etc/apt/trusted.gpg.d/vitexsoftware.asc
+    echo "deb https://repo.vitexsoftware.com trixie main" | sudo tee /etc/apt/sources.list.d/vitexsoftware.list
+    sudo apt update
+    sudo apt install netbox-mcp-server
+    ```
+
+    With this installation method, use `/usr/bin/netbox-mcp-server` directly instead of
+    `uv run netbox-mcp-server` in the examples below (no `--directory` needed).
 
 3. Verify the server can run: `NETBOX_URL=https://netbox.example.com/ NETBOX_TOKEN=<your-api-token> uv run netbox-mcp-server`
 
@@ -180,7 +195,7 @@ The server supports multiple configuration sources with the following precedence
 | `MCP_AUTH_TOKEN` | String | - | No | Bearer token required on the HTTP endpoint. When unset, the HTTP transport is unauthenticated. Clients send `Authorization: Bearer <token>`. |
 | `VERIFY_SSL` | Boolean | `true` | No | Whether to verify SSL certificates |
 | `NETBOX_TIMEOUT` | Float | `30.0` | No | Request timeout in seconds for calls to the NetBox API |
-| `NETBOX_READONLY` | Boolean | `true` | No | Reject write operations (create/update/delete) against NetBox |
+| `NETBOX_READONLY` | Boolean | `true` | No | Guards the underlying REST client against write operations (create/update/delete). No MCP tool ever calls these — this only matters if you build your own script on top of `NetBoxRestClient` directly; see [Client Library](#client-library-write-support). |
 | `ENABLE_PLUGIN_DISCOVERY` | Boolean | `false` | No | Auto-discover plugin object types at startup |
 | `LOG_LEVEL` | `DEBUG` \| `INFO` \| `WARNING` \| `ERROR` \| `CRITICAL` | `INFO` | No | Logging verbosity |
 
@@ -401,6 +416,39 @@ Discovered plugin types use the `app_label.model` naming convention (e.g., `netb
 ### Failure Behavior
 
 If discovery fails for any reason (network error, insufficient permissions, unsupported NetBox version), the server logs a warning and continues with core types only. This ensures the server always starts successfully regardless of discovery outcome.
+
+## Client Library Write Support
+
+The MCP tool surface exposed by this server is read-only by design (see [Project
+Scope](CONTRIBUTING.md#project-scope)) — no `@mcp.tool` ever creates, updates, or deletes
+anything.
+
+The underlying `NetBoxRestClient` (`src/netbox_mcp_server/netbox_client.py`), however,
+implements the full NetBox CRUD interface (`create`, `update`, `delete`, `bulk_create`,
+`bulk_update`, `bulk_delete`) alongside `get`. This exists to support the future
+plugin/ORM implementation path described in `CONTRIBUTING.md`, and is guarded by the
+`readonly` constructor argument (`NETBOX_READONLY` env var / `--netbox-readonly` CLI flag
+for the packaged server, default `true`) — every write method raises `PermissionError`
+before making any request unless it's explicitly disabled.
+
+This write path has been validated against a live NetBox instance: create/update/delete and
+their bulk variants all confirmed working, including against `virtualization.virtualmachine`,
+`dcim.interfaces`, and `ipam.services` objects. If you're building your own automation on top
+of this client (outside the MCP tool surface), instantiate it directly:
+
+```python
+from netbox_mcp_server.netbox_client import NetBoxRestClient
+
+client = NetBoxRestClient(
+    url="https://netbox.example.com/",
+    token="<your-api-token>",
+    readonly=False,  # required to allow writes; defaults to True
+)
+client.create("dcim/sites", {"name": "New Site", "slug": "new-site", "status": "active"})
+```
+
+Treat this as a library extension point for your own scripts, not as a capability of the
+MCP server's tool surface itself.
 
 ## Development
 
