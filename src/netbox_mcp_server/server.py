@@ -9,7 +9,7 @@ from typing import Annotated, Any
 import httpx
 from fastmcp import FastMCP
 from fastmcp.server.auth import AccessToken, TokenVerifier
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, ValidationError
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 
@@ -748,6 +748,29 @@ async def _update_tool_descriptions() -> None:
             tool.description = f"{prefix}\n\n{type_list}{suffix}"
 
 
+def _format_config_error(error: ValidationError) -> str:
+    """Convert a pydantic ValidationError into a human-readable message.
+
+    Args:
+        error: The validation error raised while constructing Settings.
+
+    Returns:
+        Multi-line message listing each problem by environment variable name.
+    """
+    lines = ["Configuration error:"]
+    for err in error.errors():
+        env_var = str(err["loc"][0]).upper() if err["loc"] else "config"
+        if err["type"] == "missing":
+            lines.append(f"  - {env_var} is required but not set")
+        else:
+            lines.append(f"  - {env_var}: {err['msg']}")
+    lines.append("")
+    lines.append("Set the required environment variables, e.g.:")
+    lines.append("  export NETBOX_URL=https://netbox.example.com/")
+    lines.append("  export NETBOX_TOKEN=<your-api-token>")
+    return "\n".join(lines)
+
+
 def main() -> None:
     """Main entry point for the MCP server."""
     global netbox
@@ -756,6 +779,9 @@ def main() -> None:
 
     try:
         settings = Settings(**cli_overlay)
+    except ValidationError as e:
+        print(_format_config_error(e), file=sys.stderr)  # noqa: T201 - before logging configured
+        sys.exit(1)
     except Exception as e:
         print(f"Configuration error: {e}", file=sys.stderr)  # noqa: T201 - before logging configured
         sys.exit(1)
